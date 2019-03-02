@@ -42,7 +42,7 @@ public class IndeedAPI implements JobSearch {
 	//private static String action = "jobs"; 
 	private static String useragent = "Mozilla/%2F4.0";
 	private int totalPageCount = Integer.MIN_VALUE;
-	private static String platformPrefix = "gd_";   ///////stub
+	private static String platformPrefix = "id_"; 
 	private static String companyRootUrl = "https://www.indeed.com";
 	
 	private String getIPAddress(String location) {
@@ -50,7 +50,7 @@ public class IndeedAPI implements JobSearch {
 		return ip;
 	}
 	
-	private String dropSpace(String s) { ////////////stub
+	private String dropSpace(String s) { 
 		if (s == null || s.length() == 0) {
 			return new String("");
 		}
@@ -106,7 +106,7 @@ public class IndeedAPI implements JobSearch {
 			connection.setRequestMethod("GET");
 			
 			int responseCode = connection.getResponseCode();
-			System.out.println("Glassdoor connection reponse code = " + responseCode);
+			System.out.println("Indeed connection reponse code = " + responseCode);
 			if (responseCode != 200) {			
 				System.out.println("failed.");
 				return result;
@@ -123,13 +123,13 @@ public class IndeedAPI implements JobSearch {
 							publisher, ipAddress, format, location, 
 							company, keyword, String.valueOf(currentPageCount));
 					fullUrl = url + "?" + query;
-					System.out.println("url = " + fullUrl);
+					//System.out.println("url = " + fullUrl);
 					connection = (HttpURLConnection)new URL(fullUrl).openConnection();
 					connection.setRequestMethod("GET");
 					
 					responseCode = connection.getResponseCode();
 					if (responseCode != 200) {			
-						System.out.println("Failed when connected to glassdoor, already read " 
+						System.out.println("Failed when connected to Indeed, already read " 
 								+ String.valueOf(currentPageCount) + " pages. ");
 						return result;
 					}
@@ -155,44 +155,52 @@ public class IndeedAPI implements JobSearch {
 			}
 			
 			JSONObject obj = new JSONObject(response.toString());
-			if (!obj.isNull("response")) {
-				JSONObject resp = obj.getJSONObject("response");
-				if (!resp.isNull("totalNumberOfPages")) {
-					if (totalPageCount == Integer.MIN_VALUE) {
-						this.totalPageCount =  resp.getInt("totalNumberOfPages");
-					}
-				}
-				if (!resp.isNull("jobListings")) {
-					JSONArray jobs = resp.getJSONArray("jobListings");
+//			if (!obj.isNull("response")) {
+//				JSONObject resp = obj.getJSONObject("response");
+//				if (!resp.isNull("totalNumberOfPages")) {
+//					if (totalPageCount == Integer.MIN_VALUE) {
+//						this.totalPageCount =  resp.getInt("totalNumberOfPages");
+//					}
+//				}
+				//if (!resp.isNull("results")) {
+			//obj.getInt("totalResults"
+			
+			    if (!obj.isNull("totalResults")) {
+			    	
+			    	this.totalPageCount =  Math.min(40, obj.getInt("totalResults")) ;
+			    }
+			    
+				if (!obj.isNull("results")) {	
+					JSONArray jobs = obj.getJSONArray("results");
 					for (int i = 0; i < jobs.length(); i++) {
 						ItemBuilder builder = new ItemBuilder();
 						JSONObject job = jobs.getJSONObject(i);
-						if (!job.isNull("jobListingId")) {
-							String jobId = this.platformPrefix + String.valueOf(job.getInt("jobListingId"));
+						if (!job.isNull("jobkey")) {
+							String jobId = this.platformPrefix + String.valueOf(job.getString("jobkey"));
 							builder.setJobId(jobId);
 						}
-						builder.setPlatform("glassdoor");
+						builder.setPlatform("indeed");
 						
-						if (!job.isNull("jobTitle")) {
-							builder.setTitle(job.getString("jobTitle"));
+						if (!job.isNull("jobtitle")) {
+							builder.setTitle(job.getString("jobtitle"));
 						}
-						if (!job.isNull("employer") && job.getJSONObject("employer").isNull("name")) {
-							String company = job.getJSONObject("employer").getString("name");
+						if (!job.isNull("company")) {
+							String company = job.getString("company");
 							builder.setCompany(company);
 						}
 						if (!job.isNull("jobViewUrl")) {
-							String jobUrl = this.companyRootUrl + job.getString("jobViewUrl");
+							String jobUrl = this.companyRootUrl + job.getString("url");
 							builder.setUrl(jobUrl);
 						}
-						if (!job.isNull("location")) {
-							builder.setLocation(job.getString("location"));
+						if (!job.isNull("city")) {
+							builder.setLocation(job.getString("city"));
 						}
-						if (!job.isNull("jobCategory")) {
-							builder.setCategory("glassdoor category " + String.valueOf(job.getInt("jobCategory")));
-						}
+						//if (!job.isNull("jobCategory")) {
+							builder.setCategory("1");
+						//}
 						result.add(builder.build());
 					}
- 				}
+ 				//}
 				
 			}
 			
